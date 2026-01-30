@@ -1,1 +1,385 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abdulghani Zaid | Luxury Showroom</title>
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --dark: #0f1115;
+            --darker: #050505;
+            --light: #f4f4f4;
+            --grey: #1a1a1a;
+            --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --font-serif: 'Playfair Display', Georgia, serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; transition: all 0.3s ease; }
+        body { background-color: var(--darker); color: var(--light); font-family: var(--font-main); overflow-x: hidden; }
+        
+        /* Typography */
+        h1, h2, h3 { font-family: var(--font-serif); font-weight: 400; letter-spacing: 1px; }
+        .text-gold { color: var(--gold); }
+        .formal-btn {
+            background: transparent; border: 1px solid var(--gold); color: var(--gold);
+            padding: 10px 20px; cursor: pointer; text-transform: uppercase;
+            font-size: 0.8rem; letter-spacing: 2px;
+        }
+        .formal-btn:hover { background: var(--gold); color: var(--darker); }
+        .danger-btn { border-color: #ff4444; color: #ff4444; }
+        .danger-btn:hover { background: #ff4444; color: white; }
+
+        /* --- INTRO ANIMATION --- */
+        #intro-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: var(--darker); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            flex-direction: column;
+        }
+        .intro-text-container { overflow: hidden; display: flex; }
+        .intro-letter {
+            font-family: var(--font-serif); font-size: 3rem; color: var(--gold);
+            transform: translateY(100%); opacity: 0; animation: slideUp 0.8s forwards;
+        }
+        .intro-lastname {
+            font-family: var(--font-serif); font-size: 4rem; color: white;
+            margin-top: 10px; opacity: 0; transform: scale(0.8);
+        }
+        .pop-anim { animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes slideUp { to { transform: translateY(0); opacity: 1; } }
+        @keyframes popIn { to { opacity: 1; transform: scale(1); } }
+        @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+
+        /* --- NAVBAR --- */
+        nav {
+            padding: 20px 50px; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1); background: var(--dark);
+            position: sticky; top: 0; z-index: 100;
+        }
+        .logo { font-size: 1.5rem; font-family: var(--font-serif); }
+        .nav-controls { display: flex; gap: 15px; align-items: center; }
+        
+        input[type="text"], input[type="password"] {
+            background: transparent; border: 1px solid rgba(255,255,255,0.2);
+            padding: 10px; color: white; outline: none;
+        }
+        input[type="text"]:focus { border-color: var(--gold); }
+        #search-bar { width: 300px; }
+
+        /* --- GRID --- */
+        .container { max-width: 1400px; margin: 40px auto; padding: 0 20px; }
+        .car-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 30px;
+        }
+        .car-card {
+            background: var(--grey); border: 1px solid #333;
+            cursor: pointer; position: relative; overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+        .car-card:hover { border-color: var(--gold); transform: translateY(-5px); }
+        
+        .car-img { 
+            width: 100%; height: 220px; object-fit: cover; 
+            border-bottom: 1px solid #333; display: block;
+        }
+        .car-info { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+        .car-title { font-size: 1.2rem; margin-bottom: 5px; color: white; }
+        .car-subtitle { color: var(--gold); font-size: 0.9rem; }
+
+        /* --- MODALS --- */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 1000;
+            display: none; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: var(--dark); border: 1px solid var(--gold);
+            padding: 40px; max-width: 900px; width: 90%; position: relative;
+        }
+        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 2rem; cursor: pointer; }
+        
+        .detail-layout { display: flex; gap: 40px; flex-wrap: wrap; }
+        .detail-img { flex: 1; min-width: 300px; height: 350px; object-fit: cover; border: 1px solid #333; }
+        .detail-text { flex: 1; min-width: 300px; text-align: left; }
+        .feature-list { list-style: none; margin-top: 20px; text-align: left; }
+        .feature-list li { margin-bottom: 8px; color: #ccc; }
+        .feature-list li::before { content: "•"; color: var(--gold); margin-right: 10px; }
+
+        /* --- ADMIN PANEL --- */
+        #admin-panel {
+            background: rgba(20, 20, 20, 0.95); padding: 20px; border-bottom: 2px solid var(--gold);
+            display: none;
+        }
+        .admin-controls { display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 10px; align-items: end; }
+        .delete-btn { position: absolute; top: 10px; right: 10px; z-index: 10; padding: 5px 10px; background: rgba(0,0,0,0.8); }
+
+        /* Login Modal */
+        #login-modal .modal-content { max-width: 400px; text-align: center; }
+        
+        /* Arabic Support */
+        body.rtl { direction: rtl; text-align: right; }
+        body.rtl .detail-text { text-align: right; }
+        body.rtl .feature-list { text-align: right; }
+        body.rtl .feature-list li::before { margin-right: 0; margin-left: 10px; }
+        body.rtl .nav-controls { flex-direction: row-reverse; }
+    </style>
+</head>
+<body>
+
+    <div id="intro-overlay">
+        <div class="intro-text-container" id="firstname-container"></div>
+        <div class="intro-lastname" id="lastname">ZAID</div>
+    </div>
+
+    <nav>
+        <div class="logo"><span class="text-gold">ABDULGHANI</span> ZAID</div>
+        <input type="text" id="search-bar" placeholder="Search..." onkeyup="filterCars()">
+        <div class="nav-controls">
+            <button class="formal-btn" onclick="toggleLanguage()" id="btn-lang">AR / EN</button>
+            <button class="formal-btn" onclick="openLogin()" id="btn-login">Login</button>
+            <button class="formal-btn" onclick="logout()" id="btn-logout" style="display:none;">Logout</button>
+        </div>
+    </nav>
+
+    <div id="admin-panel">
+        <h3 class="text-gold" style="margin-bottom: 15px;">Admin Control Panel</h3>
+        <div class="admin-controls">
+            <input type="text" id="new-make" placeholder="Make">
+            <input type="text" id="new-model" placeholder="Model">
+            <input type="text" id="new-img" placeholder="Image URL">
+            <input type="text" id="new-features" placeholder="Features (comma separated)">
+            <button class="formal-btn" onclick="addCar()">+ Add</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2 style="margin-bottom: 30px; text-align: center;">
+            <span class="text-gold" data-key="collection">Exclusive</span> <span data-key="inventory">Inventory</span>
+        </h2>
+        <div class="car-grid" id="car-grid"></div>
+    </div>
+
+    <div class="modal" id="detail-modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('detail-modal')">&times;</span>
+            <div class="detail-layout">
+                <img src="" id="modal-img" class="detail-img" alt="Car">
+                <div class="detail-text">
+                    <h2 class="text-gold" id="modal-title"></h2>
+                    <h4 id="modal-subtitle" style="margin-bottom: 20px; font-weight: 300;"></h4>
+                    <p data-key="features_title" style="border-bottom: 1px solid #333; padding-bottom: 5px;">Features:</p>
+                    <ul class="feature-list" id="modal-features"></ul>
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="login-modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('login-modal')">&times;</span>
+            <h2 class="text-gold" style="margin-bottom: 20px;">Access</h2>
+            <div style="display:flex; flex-direction:column; gap:15px;">
+                <input type="text" id="username" placeholder="Username">
+                <input type="password" id="password" placeholder="Password">
+                <button class="formal-btn" onclick="attemptLogin()">Login</button>
+                <button class="formal-btn" onclick="guestLogin()" style="border-color:#666; color:#888;">Guest</button>
+            </div>
+            <p id="login-error" style="color:#ff4444; margin-top:10px; display:none;">Invalid Credentials</p>
+        </div>
+    </div>
+
+    <script>
+        // --- CLEAN, STABLE IMAGE LINKS ---
+        const defaultCars = [
+            // NEW: HYUNDAI PALISADE
+            { id: 999, make: "Hyundai", model: "Palisade Calligraphy", img: "https://images.unsplash.com/photo-1624898144677-4402660a5632?auto=format&fit=crop&w=800&q=80", features: ["Nappa Leather", "Ergo Motion Seat", "20-inch Alloy Wheels", "Dual Sunroof"] },
+
+            // JEEP
+            { id: 1, make: "Jeep", model: "Wrangler Rubicon", img: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80", features: ["Rock-Trac 4x4", "Locking Differentials", "Sway Bar Disconnect", "Steel Bumpers"] },
+            { id: 2, make: "Jeep", model: "Grand Cherokee", img: "https://images.unsplash.com/photo-1519245659620-e859806a8d3b?auto=format&fit=crop&w=800&q=80", features: ["Quadra-Lift Air Suspension", "McIntosh Audio", "Night Vision", "Summit Reserve"] },
+            
+            // TOYOTA
+            { id: 4, make: "Toyota", model: "Land Cruiser", img: "https://images.unsplash.com/photo-1594502184342-2e12f877aa71?auto=format&fit=crop&w=800&q=80", features: ["Twin-Turbo V6", "E-KDSS System", "Cool Box", "JBL Premium Sound"] },
+            { id: 5, make: "Toyota", model: "Supra GR", img: "https://images.unsplash.com/photo-1629828471383-e1bd52b86134?auto=format&fit=crop&w=800&q=80", features: ["3.0L Inline-6 Turbo", "Manual Transmission", "Active Sport Differential", "Launch Control"] },
+            
+            // FORD
+            { id: 8, make: "Ford", model: "Mustang GT", img: "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&w=800&q=80", features: ["5.0L Coyote V8", "Performance Pack", "Recaro Seats", "Magneride"] },
+            { id: 9, make: "Ford", model: "F-150 Raptor", img: "https://images.unsplash.com/photo-1511527844068-006b95d162c2?auto=format&fit=crop&w=800&q=80", features: ["Twin-Turbo High Output V6", "FOX Live Valve", "37-Inch Tires", "Baja Mode"] },
+            
+            // CHEVROLET
+            { id: 11, make: "Chevrolet", model: "Corvette C8", img: "https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&w=800&q=80", features: ["Mid-Engine V8", "0-60 in 2.9s", "Removable Roof Panel", "GT2 Bucket Seats"] },
+            { id: 12, make: "Chevrolet", model: "Camaro ZL1", img: "https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&w=800&q=80", features: ["Supercharged V8", "Track Mode", "Recaro Performance Seats", "Data Recorder"] },
+            
+            // GMC
+            { id: 14, make: "GMC", model: "Sierra AT4", img: "https://images.unsplash.com/photo-1603577319985-e67c29304620?auto=format&fit=crop&w=800&q=80", features: ["2-Inch Factory Lift", "MultiPro Tailgate", "CarbonPro Bed", "Off-Road Suspension"] },
+            
+            // DODGE
+            { id: 16, make: "Dodge", model: "Challenger", img: "https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?auto=format&fit=crop&w=800&q=80", features: ["Supercharged HEMI", "Widebody Kit", "Red Key", "Launch Control"] },
+            
+            // MERCEDES
+            { id: 22, make: "Mercedes", model: "G-Class G63", img: "https://images.unsplash.com/photo-1520050206274-a1ae44613e6d?auto=format&fit=crop&w=800&q=80", features: ["Biturbo V8", "Side Exit Exhaust", "Diff Locks", "Burmester Sound"] },
+            
+            // BMW
+            { id: 24, make: "BMW", model: "M4 Competition", img: "https://images.unsplash.com/photo-1617531653332-bd46c24f2068?auto=format&fit=crop&w=800&q=80", features: ["Carbon Bucket Seats", "M xDrive", "Twin Turbo Inline-6", "Drift Analyzer"] },
+            
+            // AUDI
+            { id: 27, make: "Audi", model: "R8 V10", img: "https://images.unsplash.com/photo-1540324866030-22c608053229?auto=format&fit=crop&w=800&q=80", features: ["V10 Engine", "Mid-Engine", "Carbon Fiber", "Performance Mode"] },
+            
+            // LAMBORGHINI
+            { id: 31, make: "Lamborghini", model: "Urus", img: "https://images.unsplash.com/photo-1544614629-f71388d63d57?auto=format&fit=crop&w=800&q=80", features: ["Super SUV", "Carbon Ceramic Brakes", "ANIMA Selector", "Italian Design"] },
+            
+            // FERRARI
+            { id: 33, make: "Ferrari", model: "F8 Tributo", img: "https://images.unsplash.com/photo-1592198084033-aade902d1aae?auto=format&fit=crop&w=800&q=80", features: ["710 HP V8", "S-Duct", "Transparent Engine Cover", "Race Mode"] },
+            
+            // TESLA
+            { id: 38, make: "Tesla", model: "Model S Plaid", img: "https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=800&q=80", features: ["1020 HP", "0-60 in 1.99s", "Yoke Steering", "Gaming Computer"] },
+            
+            // NISSAN
+            { id: 39, make: "Nissan", model: "GTR", img: "https://images.unsplash.com/photo-1606665798224-4f9e8557b447?auto=format&fit=crop&w=800&q=80", features: ["Hand-Built V6", "AWD", "Titanium Exhaust", "Launch Control"] }
+        ];
+
+        // --- UPDATED KEY: 'az_showroom_FINAL_FIX' ---
+        let cars = JSON.parse(localStorage.getItem('az_showroom_FINAL_FIX')) || defaultCars;
+        
+        // Safety check to ensure data exists
+        if(cars.length < 5) {
+            cars = defaultCars;
+            localStorage.setItem('az_showroom_FINAL_FIX', JSON.stringify(cars));
+        }
+
+        let isAdmin = false;
+        let currentLang = 'en';
+
+        const dictionary = {
+            en: {
+                collection: "Exclusive", inventory: "Inventory", in_stock: "Available",
+                features_title: "Key Features:"
+            },
+            ar: {
+                collection: "المجموعة", inventory: "الحصرية", in_stock: "متوفر",
+                features_title: "أهم المواصفات:"
+            }
+        };
+
+        window.onload = function() {
+            runIntro();
+            renderCars();
+        };
+
+        function runIntro() {
+            const name = "ABDULGHANI";
+            const container = document.getElementById('firstname-container');
+            name.split('').forEach((char, index) => {
+                let span = document.createElement('span');
+                span.textContent = char;
+                span.className = 'intro-letter';
+                span.style.animationDelay = `${index * 0.1}s`;
+                container.appendChild(span);
+            });
+            setTimeout(() => { document.getElementById('lastname').classList.add('pop-anim'); }, 1200);
+            setTimeout(() => { 
+                const overlay = document.getElementById('intro-overlay');
+                overlay.style.animation = "fadeOut 1s forwards";
+                setTimeout(() => { overlay.style.display = 'none'; }, 1000);
+            }, 2500);
+        }
+
+        function renderCars(filterText = "") {
+            const grid = document.getElementById('car-grid');
+            grid.innerHTML = "";
+            
+            const filtered = cars.filter(c => (c.make + " " + c.model).toLowerCase().includes(filterText.toLowerCase()));
+
+            filtered.forEach(car => {
+                const div = document.createElement('div');
+                div.className = 'car-card';
+                div.onclick = (e) => {
+                    if(e.target.classList.contains('delete-btn')) return;
+                    showDetail(car.id);
+                };
+                div.innerHTML = `
+                    ${isAdmin ? `<button class="formal-btn delete-btn danger-btn" onclick="deleteCar(${car.id})">X</button>` : ''}
+                    <img src="${car.img}" class="car-img" alt="${car.make}" loading="lazy">
+                    <div class="car-info">
+                        <h3 class="car-title text-gold">${car.make}</h3>
+                        <p class="car-subtitle">${car.model}</p>
+                    </div>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        function filterCars() { renderCars(document.getElementById('search-bar').value); }
+
+        function showDetail(id) {
+            const car = cars.find(c => c.id === id);
+            document.getElementById('modal-img').src = car.img;
+            document.getElementById('modal-title').innerText = car.make + " " + car.model;
+            document.getElementById('modal-subtitle').innerText = "Premium Selection";
+            
+            const ul = document.getElementById('modal-features');
+            ul.innerHTML = "";
+            car.features.forEach(f => {
+                const li = document.createElement('li');
+                li.innerText = f;
+                ul.appendChild(li);
+            });
+            document.getElementById('detail-modal').style.display = 'flex';
+        }
+
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function openLogin() { if(!isAdmin) document.getElementById('login-modal').style.display = 'flex'; }
+        
+        function attemptLogin() {
+            if (document.getElementById('username').value === 'abd' && document.getElementById('password').value === 'abd') {
+                isAdmin = true;
+                closeModal('login-modal');
+                updateUI();
+            } else { document.getElementById('login-error').style.display = 'block'; }
+        }
+        function guestLogin() { isAdmin = false; closeModal('login-modal'); updateUI(); }
+        function logout() { isAdmin = false; updateUI(); }
+
+        function updateUI() {
+            document.getElementById('admin-panel').style.display = isAdmin ? 'block' : 'none';
+            document.getElementById('btn-login').style.display = isAdmin ? 'none' : 'block';
+            document.getElementById('btn-logout').style.display = isAdmin ? 'block' : 'none';
+            renderCars();
+        }
+
+        function addCar() {
+            const make = document.getElementById('new-make').value;
+            const model = document.getElementById('new-model').value;
+            const img = document.getElementById('new-img').value;
+            const feat = document.getElementById('new-features').value;
+            
+            if(make && model) {
+                cars.unshift({ id: Date.now(), make, model, img: img || "https://via.placeholder.com/800", features: feat ? feat.split(',') : [] });
+                localStorage.setItem('az_showroom_FINAL_FIX', JSON.stringify(cars));
+                renderCars();
+                document.getElementById('new-make').value = "";
+                document.getElementById('new-model').value = "";
+                document.getElementById('new-features').value = "";
+            }
+        }
+
+        function deleteCar(id) {
+            if(confirm("Delete this car?")) {
+                cars = cars.filter(c => c.id !== id);
+                localStorage.setItem('az_showroom_FINAL_FIX', JSON.stringify(cars));
+                renderCars();
+            }
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'ar' : 'en';
+            document.body.className = currentLang === 'ar' ? 'rtl' : '';
+            const dict = dictionary[currentLang];
+            document.querySelectorAll('[data-key]').forEach(el => el.innerText = dict[el.getAttribute('data-key')] || el.innerText);
+        }
+    </script>
+</body>
+</html>
