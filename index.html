@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Abdulghani Zaid | Luxury Showroom</title>
+    <title>Abdulghani Zaid | Global Showroom</title>
     <style>
         :root {
             --gold: #D4AF37;
@@ -29,8 +29,21 @@
         .formal-btn:hover { background: var(--gold); color: var(--darker); }
         .danger-btn { border-color: #ff4444; color: #ff4444; }
         .danger-btn:hover { background: #ff4444; color: white; }
-        .action-btn { background: var(--grey); border: 1px solid #444; color: #ccc; }
-        .action-btn:hover { border-color: var(--gold); color: var(--gold); }
+        .refresh-btn { background: #222; border-color: #555; color: #aaa; margin-left: 10px; }
+        .refresh-btn:hover { color: white; border-color: white; }
+
+        /* --- LOADING SPINNER --- */
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: rgba(0,0,0,0.8); z-index: 2000;
+            display: none; justify-content: center; align-items: center; flex-direction: column;
+        }
+        .spinner {
+            width: 50px; height: 50px; border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%; border-top-color: var(--gold);
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         /* --- INTRO ANIMATION --- */
         #intro-overlay {
@@ -115,7 +128,8 @@
             display: none;
         }
         .admin-controls { display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 10px; align-items: end; }
-        
+        .delete-btn { position: absolute; top: 10px; right: 10px; z-index: 10; padding: 5px 10px; background: rgba(0,0,0,0.8); }
+
         /* Login Modal */
         #login-modal .modal-content { max-width: 400px; text-align: center; }
         
@@ -129,6 +143,11 @@
 </head>
 <body>
 
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p style="margin-top: 20px; color: var(--gold);">Syncing with Cloud...</p>
+    </div>
+
     <div id="intro-overlay">
         <div class="intro-text-container" id="firstname-container"></div>
         <div class="intro-lastname" id="lastname">ZAID</div>
@@ -139,29 +158,21 @@
         <input type="text" id="search-bar" placeholder="Search..." onkeyup="filterCars()">
         <div class="nav-controls">
             <button class="formal-btn" onclick="toggleLanguage()" id="btn-lang">AR / EN</button>
+            <button class="formal-btn refresh-btn" onclick="fetchCarsFromCloud()" title="Reload Data">↻ Sync</button>
             <button class="formal-btn" onclick="openLogin()" id="btn-login">Login</button>
             <button class="formal-btn" onclick="logout()" id="btn-logout" style="display:none;">Logout</button>
         </div>
     </nav>
 
     <div id="admin-panel">
-        <h3 class="text-gold" style="margin-bottom: 15px;">Admin Control Panel</h3>
+        <h3 class="text-gold" style="margin-bottom: 15px;">Admin Control Panel (Cloud Connected)</h3>
         <div class="admin-controls">
             <input type="text" id="new-make" placeholder="Make (e.g. BMW)">
             <input type="text" id="new-model" placeholder="Model (e.g. X5)">
             <input type="text" id="new-img" placeholder="Leave empty for Auto-Match">
             <input type="text" id="new-features" placeholder="Features (comma separated)">
-            <button class="formal-btn" onclick="addCar()">+ Add</button>
+            <button class="formal-btn" onclick="addCar()">+ Add to Cloud</button>
         </div>
-        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #444; display:flex; justify-content: space-between;">
-             <div>
-                <button class="formal-btn action-btn" onclick="forceFixImages()">🔧 Force Fix Images</button>
-             </div>
-             <div>
-                 <button class="formal-btn" style="background: var(--gold); color: #000;" onclick="exportData()">💾 Copy Data for GitHub</button>
-             </div>
-        </div>
-        <p style="color: #888; font-size: 0.8rem; margin-top: 10px;">To save permanently: Click "Copy Data", paste it into the code replacing "defaultCars", then upload to GitHub.</p>
     </div>
 
     <div class="container">
@@ -201,7 +212,13 @@
     </div>
 
     <script>
-        // --- 1. IMAGE DATABASE ---
+        // ==========================================
+        //  CLOUD CONFIGURATION (PASTE KEYS HERE)
+        // ==========================================
+        const BIN_ID = "YOUR_BIN_ID_HERE"; // Example: 65c3...
+        const API_KEY = "YOUR_API_KEY_HERE"; // Example: $2a$10...
+        // ==========================================
+
         const imageDatabase = {
             "palisade": "https://images.unsplash.com/photo-1624898144677-4402660a5632?auto=format&fit=crop&w=800&q=80",
             "wrangler": "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80",
@@ -227,8 +244,6 @@
             "gtr": "https://images.unsplash.com/photo-1606665798224-4f9e8557b447?auto=format&fit=crop&w=800&q=80"
         };
 
-        // --- 2. DEFAULT CARS (PERMANENT LIST) ---
-        // PASTE YOUR COPIED DATA HERE WHEN UPDATING FOR GITHUB
         const defaultCars = [
             { id: 999, make: "Hyundai", model: "Palisade Calligraphy", img: imageDatabase["palisade"], features: ["Nappa Leather", "Ergo Motion Seat", "20-inch Alloy Wheels", "Dual Sunroof"] },
             { id: 1, make: "Jeep", model: "Wrangler Rubicon", img: imageDatabase["wrangler"], features: ["Rock-Trac 4x4", "Locking Diffs", "Sway Bar Disconnect", "Steel Bumpers"] },
@@ -240,15 +255,7 @@
             { id: 39, make: "Nissan", model: "GTR", img: imageDatabase["gtr"], features: ["Hand-Built V6", "AWD", "Titanium Exhaust", "Launch Control"] }
         ];
 
-        const DB_KEY = 'az_showroom_GITHUB_READY_v1';
-        let cars = JSON.parse(localStorage.getItem(DB_KEY)) || defaultCars;
-
-        // Reset if data seems broken/empty
-        if(cars.length < 2) {
-            cars = defaultCars;
-            localStorage.setItem(DB_KEY, JSON.stringify(cars));
-        }
-
+        let cars = [];
         let isAdmin = false;
         let currentLang = 'en';
 
@@ -259,8 +266,81 @@
 
         window.onload = function() {
             runIntro();
-            renderCars();
+            fetchCarsFromCloud(); // INITIAL LOAD FROM CLOUD
         };
+
+        // --- CLOUD SYNC FUNCTIONS ---
+        async function fetchCarsFromCloud() {
+            if(BIN_ID === "YOUR_BIN_ID_HERE") {
+                // If user hasn't set up keys, load defaults locally
+                cars = defaultCars;
+                renderCars();
+                return;
+            }
+
+            toggleLoading(true);
+            try {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Master-Key': API_KEY
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // JSONBin v3 returns data inside a 'record' object
+                    cars = data.record;
+                    // If bin is empty/new, load defaults
+                    if(!Array.isArray(cars) || cars.length === 0) {
+                        cars = defaultCars;
+                        saveCarsToCloud(); // Save defaults to cloud for first time
+                    }
+                } else {
+                    console.error("Cloud Error:", response.status);
+                    alert("Failed to sync. Loading offline backup.");
+                    cars = defaultCars; 
+                }
+            } catch (error) {
+                console.error("Network Error:", error);
+                cars = defaultCars;
+            }
+            toggleLoading(false);
+            renderCars();
+        }
+
+        async function saveCarsToCloud() {
+            if(BIN_ID === "YOUR_BIN_ID_HERE") {
+                alert("Please add your API Keys in the code to save to cloud.");
+                return;
+            }
+
+            toggleLoading(true);
+            try {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': API_KEY
+                    },
+                    body: JSON.stringify(cars)
+                });
+
+                if (!response.ok) {
+                    alert("Error saving to cloud! Check your API Keys.");
+                }
+            } catch (error) {
+                alert("Network error while saving.");
+            }
+            toggleLoading(false);
+            renderCars();
+        }
+
+        function toggleLoading(show) {
+            document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
+        }
+
+        // --- STANDARD FUNCTIONS ---
 
         function runIntro() {
             const name = "ABDULGHANI";
@@ -286,22 +366,6 @@
                 if (searchString.includes(key)) return url;
             }
             return "https://via.placeholder.com/800x600?text=No+Image+Available"; 
-        }
-
-        // --- EXPORT FUNCTION FOR GITHUB ---
-        function exportData() {
-            const dataStr = JSON.stringify(cars);
-            navigator.clipboard.writeText(dataStr).then(() => {
-                alert("Data copied to clipboard! \n\n1. Go to your code file.\n2. Find 'const defaultCars = [...]'.\n3. Replace the text inside the brackets with what you just copied.\n4. Upload to GitHub.");
-            });
-        }
-
-        function forceFixImages() {
-            if(confirm("Auto-correct all images based on names?")) {
-                cars.forEach(car => { car.img = getSmartImage(car.make, car.model); });
-                localStorage.setItem(DB_KEY, JSON.stringify(cars));
-                renderCars();
-            }
         }
 
         function renderCars(filterText = "") {
@@ -373,9 +437,12 @@
             
             if(make && model) {
                 if (!img) img = getSmartImage(make, model);
+                // Add to top of list
                 cars.unshift({ id: Date.now(), make, model, img: img, features: feat ? feat.split(',') : [] });
-                localStorage.setItem(DB_KEY, JSON.stringify(cars));
-                renderCars();
+                // Save to Cloud
+                saveCarsToCloud();
+                
+                // Clear inputs
                 document.getElementById('new-make').value = "";
                 document.getElementById('new-model').value = "";
                 document.getElementById('new-img').value = "";
@@ -384,10 +451,9 @@
         }
 
         function deleteCar(id) {
-            if(confirm("Delete this car?")) {
+            if(confirm("Delete this car from the Cloud?")) {
                 cars = cars.filter(c => c.id !== id);
-                localStorage.setItem(DB_KEY, JSON.stringify(cars));
-                renderCars();
+                saveCarsToCloud();
             }
         }
 
