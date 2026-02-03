@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,6 +29,8 @@
         .formal-btn:hover { background: var(--gold); color: var(--darker); }
         .danger-btn { border-color: #ff4444; color: #ff4444; }
         .danger-btn:hover { background: #ff4444; color: white; }
+        .action-btn { background: var(--grey); border: 1px solid #444; color: #ccc; }
+        .action-btn:hover { border-color: var(--gold); color: var(--gold); }
 
         /* --- INTRO ANIMATION --- */
         #intro-overlay {
@@ -114,8 +115,7 @@
             display: none;
         }
         .admin-controls { display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 10px; align-items: end; }
-        .delete-btn { position: absolute; top: 10px; right: 10px; z-index: 10; padding: 5px 10px; background: rgba(0,0,0,0.8); }
-
+        
         /* Login Modal */
         #login-modal .modal-content { max-width: 400px; text-align: center; }
         
@@ -147,12 +147,21 @@
     <div id="admin-panel">
         <h3 class="text-gold" style="margin-bottom: 15px;">Admin Control Panel</h3>
         <div class="admin-controls">
-            <input type="text" id="new-make" placeholder="Make">
-            <input type="text" id="new-model" placeholder="Model">
-            <input type="text" id="new-img" placeholder="Image URL">
+            <input type="text" id="new-make" placeholder="Make (e.g. BMW)">
+            <input type="text" id="new-model" placeholder="Model (e.g. X5)">
+            <input type="text" id="new-img" placeholder="Leave empty for Auto-Match">
             <input type="text" id="new-features" placeholder="Features (comma separated)">
             <button class="formal-btn" onclick="addCar()">+ Add</button>
         </div>
+        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #444; display:flex; justify-content: space-between;">
+             <div>
+                <button class="formal-btn action-btn" onclick="forceFixImages()">🔧 Force Fix Images</button>
+             </div>
+             <div>
+                 <button class="formal-btn" style="background: var(--gold); color: #000;" onclick="exportData()">💾 Copy Data for GitHub</button>
+             </div>
+        </div>
+        <p style="color: #888; font-size: 0.8rem; margin-top: 10px;">To save permanently: Click "Copy Data", paste it into the code replacing "defaultCars", then upload to GitHub.</p>
     </div>
 
     <div class="container">
@@ -172,7 +181,7 @@
                     <h4 id="modal-subtitle" style="margin-bottom: 20px; font-weight: 300;"></h4>
                     <p data-key="features_title" style="border-bottom: 1px solid #333; padding-bottom: 5px;">Features:</p>
                     <ul class="feature-list" id="modal-features"></ul>
-                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -192,76 +201,60 @@
     </div>
 
     <script>
-        // --- CLEAN, STABLE IMAGE LINKS ---
-        const defaultCars = [
-            // NEW: HYUNDAI PALISADE
-            { id: 999, make: "Hyundai", model: "Palisade Calligraphy", img: "https://images.unsplash.com/photo-1624898144677-4402660a5632?auto=format&fit=crop&w=800&q=80", features: ["Nappa Leather", "Ergo Motion Seat", "20-inch Alloy Wheels", "Dual Sunroof"] },
+        // --- 1. IMAGE DATABASE ---
+        const imageDatabase = {
+            "palisade": "https://images.unsplash.com/photo-1624898144677-4402660a5632?auto=format&fit=crop&w=800&q=80",
+            "wrangler": "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80",
+            "grand cherokee": "https://images.unsplash.com/photo-1519245659620-e859806a8d3b?auto=format&fit=crop&w=800&q=80",
+            "gladiator": "https://images.unsplash.com/photo-1590053913076-46b53c2317c8?auto=format&fit=crop&w=800&q=80",
+            "land cruiser": "https://images.unsplash.com/photo-1594502184342-2e12f877aa71?auto=format&fit=crop&w=800&q=80",
+            "supra": "https://images.unsplash.com/photo-1629828471383-e1bd52b86134?auto=format&fit=crop&w=800&q=80",
+            "mustang": "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&w=800&q=80",
+            "raptor": "https://images.unsplash.com/photo-1511527844068-006b95d162c2?auto=format&fit=crop&w=800&q=80",
+            "corvette": "https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&w=800&q=80",
+            "camaro": "https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&w=800&q=80",
+            "tahoe": "https://images.unsplash.com/photo-1553559367-17eb48cb7f2d?auto=format&fit=crop&w=800&q=80",
+            "sierra": "https://images.unsplash.com/photo-1603577319985-e67c29304620?auto=format&fit=crop&w=800&q=80",
+            "challenger": "https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?auto=format&fit=crop&w=800&q=80",
+            "charger": "https://images.unsplash.com/photo-1596522336306-444f94084f7b?auto=format&fit=crop&w=800&q=80",
+            "g-class": "https://images.unsplash.com/photo-1520050206274-a1ae44613e6d?auto=format&fit=crop&w=800&q=80",
+            "g63": "https://images.unsplash.com/photo-1520050206274-a1ae44613e6d?auto=format&fit=crop&w=800&q=80",
+            "m4": "https://images.unsplash.com/photo-1617531653332-bd46c24f2068?auto=format&fit=crop&w=800&q=80",
+            "lamborghini": "https://images.unsplash.com/photo-1544614629-f71388d63d57?auto=format&fit=crop&w=800&q=80",
+            "urus": "https://images.unsplash.com/photo-1544614629-f71388d63d57?auto=format&fit=crop&w=800&q=80",
+            "ferrari": "https://images.unsplash.com/photo-1592198084033-aade902d1aae?auto=format&fit=crop&w=800&q=80",
+            "tesla": "https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=800&q=80",
+            "gtr": "https://images.unsplash.com/photo-1606665798224-4f9e8557b447?auto=format&fit=crop&w=800&q=80"
+        };
 
-            // JEEP
-            { id: 1, make: "Jeep", model: "Wrangler Rubicon", img: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80", features: ["Rock-Trac 4x4", "Locking Differentials", "Sway Bar Disconnect", "Steel Bumpers"] },
-            { id: 2, make: "Jeep", model: "Grand Cherokee", img: "https://images.unsplash.com/photo-1519245659620-e859806a8d3b?auto=format&fit=crop&w=800&q=80", features: ["Quadra-Lift Air Suspension", "McIntosh Audio", "Night Vision", "Summit Reserve"] },
-            
-            // TOYOTA
-            { id: 4, make: "Toyota", model: "Land Cruiser", img: "https://images.unsplash.com/photo-1594502184342-2e12f877aa71?auto=format&fit=crop&w=800&q=80", features: ["Twin-Turbo V6", "E-KDSS System", "Cool Box", "JBL Premium Sound"] },
-            { id: 5, make: "Toyota", model: "Supra GR", img: "https://images.unsplash.com/photo-1629828471383-e1bd52b86134?auto=format&fit=crop&w=800&q=80", features: ["3.0L Inline-6 Turbo", "Manual Transmission", "Active Sport Differential", "Launch Control"] },
-            
-            // FORD
-            { id: 8, make: "Ford", model: "Mustang GT", img: "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&w=800&q=80", features: ["5.0L Coyote V8", "Performance Pack", "Recaro Seats", "Magneride"] },
-            { id: 9, make: "Ford", model: "F-150 Raptor", img: "https://images.unsplash.com/photo-1511527844068-006b95d162c2?auto=format&fit=crop&w=800&q=80", features: ["Twin-Turbo High Output V6", "FOX Live Valve", "37-Inch Tires", "Baja Mode"] },
-            
-            // CHEVROLET
-            { id: 11, make: "Chevrolet", model: "Corvette C8", img: "https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&w=800&q=80", features: ["Mid-Engine V8", "0-60 in 2.9s", "Removable Roof Panel", "GT2 Bucket Seats"] },
-            { id: 12, make: "Chevrolet", model: "Camaro ZL1", img: "https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&w=800&q=80", features: ["Supercharged V8", "Track Mode", "Recaro Performance Seats", "Data Recorder"] },
-            
-            // GMC
-            { id: 14, make: "GMC", model: "Sierra AT4", img: "https://images.unsplash.com/photo-1603577319985-e67c29304620?auto=format&fit=crop&w=800&q=80", features: ["2-Inch Factory Lift", "MultiPro Tailgate", "CarbonPro Bed", "Off-Road Suspension"] },
-            
-            // DODGE
-            { id: 16, make: "Dodge", model: "Challenger", img: "https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?auto=format&fit=crop&w=800&q=80", features: ["Supercharged HEMI", "Widebody Kit", "Red Key", "Launch Control"] },
-            
-            // MERCEDES
-            { id: 22, make: "Mercedes", model: "G-Class G63", img: "https://images.unsplash.com/photo-1520050206274-a1ae44613e6d?auto=format&fit=crop&w=800&q=80", features: ["Biturbo V8", "Side Exit Exhaust", "Diff Locks", "Burmester Sound"] },
-            
-            // BMW
-            { id: 24, make: "BMW", model: "M4 Competition", img: "https://images.unsplash.com/photo-1617531653332-bd46c24f2068?auto=format&fit=crop&w=800&q=80", features: ["Carbon Bucket Seats", "M xDrive", "Twin Turbo Inline-6", "Drift Analyzer"] },
-            
-            // AUDI
-            { id: 27, make: "Audi", model: "R8 V10", img: "https://images.unsplash.com/photo-1540324866030-22c608053229?auto=format&fit=crop&w=800&q=80", features: ["V10 Engine", "Mid-Engine", "Carbon Fiber", "Performance Mode"] },
-            
-            // LAMBORGHINI
-            { id: 31, make: "Lamborghini", model: "Urus", img: "https://images.unsplash.com/photo-1544614629-f71388d63d57?auto=format&fit=crop&w=800&q=80", features: ["Super SUV", "Carbon Ceramic Brakes", "ANIMA Selector", "Italian Design"] },
-            
-            // FERRARI
-            { id: 33, make: "Ferrari", model: "F8 Tributo", img: "https://images.unsplash.com/photo-1592198084033-aade902d1aae?auto=format&fit=crop&w=800&q=80", features: ["710 HP V8", "S-Duct", "Transparent Engine Cover", "Race Mode"] },
-            
-            // TESLA
-            { id: 38, make: "Tesla", model: "Model S Plaid", img: "https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=800&q=80", features: ["1020 HP", "0-60 in 1.99s", "Yoke Steering", "Gaming Computer"] },
-            
-            // NISSAN
-            { id: 39, make: "Nissan", model: "GTR", img: "https://images.unsplash.com/photo-1606665798224-4f9e8557b447?auto=format&fit=crop&w=800&q=80", features: ["Hand-Built V6", "AWD", "Titanium Exhaust", "Launch Control"] }
+        // --- 2. DEFAULT CARS (PERMANENT LIST) ---
+        // PASTE YOUR COPIED DATA HERE WHEN UPDATING FOR GITHUB
+        const defaultCars = [
+            { id: 999, make: "Hyundai", model: "Palisade Calligraphy", img: imageDatabase["palisade"], features: ["Nappa Leather", "Ergo Motion Seat", "20-inch Alloy Wheels", "Dual Sunroof"] },
+            { id: 1, make: "Jeep", model: "Wrangler Rubicon", img: imageDatabase["wrangler"], features: ["Rock-Trac 4x4", "Locking Diffs", "Sway Bar Disconnect", "Steel Bumpers"] },
+            { id: 5, make: "Toyota", model: "Supra GR", img: imageDatabase["supra"], features: ["3.0L Turbo", "Manual Gearbox", "Sport Diff", "Red Paint"] },
+            { id: 8, make: "Ford", model: "Mustang GT", img: imageDatabase["mustang"], features: ["5.0L V8", "Manual", "Track Apps", "Red Paint"] },
+            { id: 16, make: "Dodge", model: "Challenger", img: imageDatabase["challenger"], features: ["HEMI V8", "Shaker Hood", "Blue Paint", "Performance Pages"] },
+            { id: 22, make: "Mercedes", model: "G-Class G63", img: imageDatabase["g-class"], features: ["Biturbo V8", "Side Exit Exhaust", "Diff Locks", "Burmester Sound"] },
+            { id: 31, make: "Lamborghini", model: "Urus", img: imageDatabase["lamborghini"], features: ["Super SUV", "Carbon Ceramic Brakes", "ANIMA Selector", "Italian Design"] },
+            { id: 39, make: "Nissan", model: "GTR", img: imageDatabase["gtr"], features: ["Hand-Built V6", "AWD", "Titanium Exhaust", "Launch Control"] }
         ];
 
-        // --- UPDATED KEY: 'az_showroom_FINAL_FIX' ---
-        let cars = JSON.parse(localStorage.getItem('az_showroom_FINAL_FIX')) || defaultCars;
-        
-        // Safety check to ensure data exists
-        if(cars.length < 5) {
+        const DB_KEY = 'az_showroom_GITHUB_READY_v1';
+        let cars = JSON.parse(localStorage.getItem(DB_KEY)) || defaultCars;
+
+        // Reset if data seems broken/empty
+        if(cars.length < 2) {
             cars = defaultCars;
-            localStorage.setItem('az_showroom_FINAL_FIX', JSON.stringify(cars));
+            localStorage.setItem(DB_KEY, JSON.stringify(cars));
         }
 
         let isAdmin = false;
         let currentLang = 'en';
 
         const dictionary = {
-            en: {
-                collection: "Exclusive", inventory: "Inventory", in_stock: "Available",
-                features_title: "Key Features:"
-            },
-            ar: {
-                collection: "المجموعة", inventory: "الحصرية", in_stock: "متوفر",
-                features_title: "أهم المواصفات:"
-            }
+            en: { collection: "Exclusive", inventory: "Inventory", features_title: "Key Features:" },
+            ar: { collection: "المجموعة", inventory: "الحصرية", features_title: "أهم المواصفات:" }
         };
 
         window.onload = function() {
@@ -287,10 +280,33 @@
             }, 2500);
         }
 
+        function getSmartImage(make, model) {
+            const searchString = (make + " " + model).toLowerCase();
+            for (const [key, url] of Object.entries(imageDatabase)) {
+                if (searchString.includes(key)) return url;
+            }
+            return "https://via.placeholder.com/800x600?text=No+Image+Available"; 
+        }
+
+        // --- EXPORT FUNCTION FOR GITHUB ---
+        function exportData() {
+            const dataStr = JSON.stringify(cars);
+            navigator.clipboard.writeText(dataStr).then(() => {
+                alert("Data copied to clipboard! \n\n1. Go to your code file.\n2. Find 'const defaultCars = [...]'.\n3. Replace the text inside the brackets with what you just copied.\n4. Upload to GitHub.");
+            });
+        }
+
+        function forceFixImages() {
+            if(confirm("Auto-correct all images based on names?")) {
+                cars.forEach(car => { car.img = getSmartImage(car.make, car.model); });
+                localStorage.setItem(DB_KEY, JSON.stringify(cars));
+                renderCars();
+            }
+        }
+
         function renderCars(filterText = "") {
             const grid = document.getElementById('car-grid');
             grid.innerHTML = "";
-            
             const filtered = cars.filter(c => (c.make + " " + c.model).toLowerCase().includes(filterText.toLowerCase()));
 
             filtered.forEach(car => {
@@ -302,7 +318,7 @@
                 };
                 div.innerHTML = `
                     ${isAdmin ? `<button class="formal-btn delete-btn danger-btn" onclick="deleteCar(${car.id})">X</button>` : ''}
-                    <img src="${car.img}" class="car-img" alt="${car.make}" loading="lazy">
+                    <img src="${car.img}" class="car-img" alt="${car.make}" loading="lazy" onerror="this.src='https://via.placeholder.com/800?text=Image+Error'">
                     <div class="car-info">
                         <h3 class="car-title text-gold">${car.make}</h3>
                         <p class="car-subtitle">${car.model}</p>
@@ -319,7 +335,6 @@
             document.getElementById('modal-img').src = car.img;
             document.getElementById('modal-title').innerText = car.make + " " + car.model;
             document.getElementById('modal-subtitle').innerText = "Premium Selection";
-            
             const ul = document.getElementById('modal-features');
             ul.innerHTML = "";
             car.features.forEach(f => {
@@ -353,15 +368,17 @@
         function addCar() {
             const make = document.getElementById('new-make').value;
             const model = document.getElementById('new-model').value;
-            const img = document.getElementById('new-img').value;
+            let img = document.getElementById('new-img').value;
             const feat = document.getElementById('new-features').value;
             
             if(make && model) {
-                cars.unshift({ id: Date.now(), make, model, img: img || "https://via.placeholder.com/800", features: feat ? feat.split(',') : [] });
-                localStorage.setItem('az_showroom_FINAL_FIX', JSON.stringify(cars));
+                if (!img) img = getSmartImage(make, model);
+                cars.unshift({ id: Date.now(), make, model, img: img, features: feat ? feat.split(',') : [] });
+                localStorage.setItem(DB_KEY, JSON.stringify(cars));
                 renderCars();
                 document.getElementById('new-make').value = "";
                 document.getElementById('new-model').value = "";
+                document.getElementById('new-img').value = "";
                 document.getElementById('new-features').value = "";
             }
         }
@@ -369,7 +386,7 @@
         function deleteCar(id) {
             if(confirm("Delete this car?")) {
                 cars = cars.filter(c => c.id !== id);
-                localStorage.setItem('az_showroom_FINAL_FIX', JSON.stringify(cars));
+                localStorage.setItem(DB_KEY, JSON.stringify(cars));
                 renderCars();
             }
         }
